@@ -21,7 +21,13 @@ app.get('/', (req, res) => {
 // Lắng nghe kết nối từ client
 io.on('connection', (socket) => {
     console.log('Client đã kết nối');
-    // Gửi dữ liệu giả lập mỗi 1 giây
+    const data = {
+        "sali": Math.random().toFixed(2) * 100, // Giả lập dữ liệu nồng độ muối
+        "temp": (Math.random() * 30 + 20).toFixed(2), // Giả lập nhiệt độ
+        "do": (Math.random() * 10).toFixed(2), // Giả lập nồng độ oxy hòa tan
+        "ph": (Math.random() * 14).toFixed(2) // Giả lập độ pH
+    };
+    io.emit('device-data', data);    // Gửi dữ liệu giả lập mỗi 1 giây
   
 });
 
