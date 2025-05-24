@@ -104,9 +104,17 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .datetime-display {
@@ -180,13 +188,27 @@
         }
 
         @keyframes warning-pulse {
-            0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
-            50% { box-shadow: 0 5px 20px rgba(243, 156, 18, 0.3); }
+
+            0%,
+            100% {
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 5px 20px rgba(243, 156, 18, 0.3);
+            }
         }
 
         @keyframes danger-pulse {
-            0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
-            50% { box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4); }
+
+            0%,
+            100% {
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4);
+            }
         }
 
         .status-icon {
@@ -320,8 +342,16 @@
         }
 
         @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0.3;
+            }
         }
 
         /* Responsive cho tablet */
@@ -330,7 +360,7 @@
                 grid-template-columns: repeat(2, 1fr);
                 gap: 15px;
             }
-            
+
             .container {
                 padding: 25px;
             }
@@ -387,9 +417,19 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-2px);
+            }
+
+            75% {
+                transform: translateX(2px);
+            }
         }
     </style>
 </head>
@@ -465,7 +505,7 @@
             <canvas id="chart"></canvas>
         </div>
     </div>
-
+    <script src="socket.io/socket.io.js"></script>
     <script>
         const maxDataPoints = 50;
         let chartInstance = null;
@@ -522,7 +562,7 @@
             if (!threshold) return 'normal';
 
             const numValue = parseFloat(value);
-            
+
             if (numValue < threshold.warningMin || numValue > threshold.warningMax) {
                 return 'danger';
             } else if (numValue < threshold.min || numValue > threshold.max) {
@@ -543,13 +583,13 @@
         function updateStatusPanel(type, value, status) {
             const statusItem = $(`.status-item[data-type="${type}"]`);
             const info = sensorInfo[type];
-            
+
             // Cập nhật class trạng thái
             statusItem.removeClass('normal warning danger').addClass(status);
-            
+
             // Cập nhật giá trị
             statusItem.find('.status-value').text(value + info.unit);
-            
+
             // Cập nhật thông điệp
             let message = '';
             if (status === 'normal') {
@@ -562,69 +602,61 @@
             statusItem.find('.status-message').text(message);
         }
 
+
         // Simulate socket data for demo
-        function simulateData() {
-            const data = {
-                ph: (Math.random() * 4 + 5.5).toFixed(1), // 5.5 - 9.5
-                temp: (Math.random() * 20 + 15).toFixed(1), // 15 - 35
-                sali: (Math.random() * 30 + 20).toFixed(1), // 20 - 50
-                do: (Math.random() * 15 + 2).toFixed(1) // 2 - 17
-            };
 
-            // Xử lý dữ liệu giống như socket.on
-            for (let key in data) {
-                if (sensorData[key]) {
-                    const value = data[key];
-                    const oldValue = $('#' + key).text();
-                    
-                    // Cập nhật giá trị hiển thị
-                    $('#' + key).text(value);
+        const socket = io();
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.on('device-data', (data) => {
+                // Xử lý dữ liệu nhận được từ server
+                for (let key in data) {
+                    if (sensorData[key]) {
+                        const value = data[key];
+                        const oldValue = $('#' + key).text();
 
-                    // Kiểm tra trạng thái
-                    const status = checkParameterStatus(key, value);
-                    const oldStatus = checkParameterStatus(key, oldValue);
-                    
-                    // Cập nhật màu nút
-                    updateButtonStatus(key, status);
-                    
-                    // Cập nhật bảng trạng thái
-                    updateStatusPanel(key, value, status);
+                        // Cập nhật giá trị hiển thị
+                        $('#' + key).text(value);
 
-                    // Thêm dữ liệu vào mảng
-                    sensorData[key].push(parseFloat(value));
-                    if (sensorData[key].length > maxDataPoints) {
-                        sensorData[key].shift();
-                    }
+                        // Kiểm tra trạng thái
+                        const status = checkParameterStatus(key, value);
+                        const oldStatus = checkParameterStatus(key, oldValue);
 
-                    // Cập nhật giá trị trong content display nếu đang xem sensor này
-                    if (currentType === key) {
-                        updateContentDisplay(key, value);
+                        // Cập nhật màu nút
+                        updateButtonStatus(key, status);
+
+                        // Cập nhật bảng trạng thái
+                        updateStatusPanel(key, value, status);
+
+                        // Thêm dữ liệu vào mảng
+                        sensorData[key].push(parseFloat(value));
+                        if (sensorData[key].length > maxDataPoints) {
+                            sensorData[key].shift();
+                        }
+
+                        // Cập nhật giá trị trong content display nếu đang xem sensor này
+                        if (currentType === key) {
+                            updateContentDisplay(key, value);
+                        }
                     }
                 }
-            }
 
-            // Cập nhật label thời gian
-            const now = new Date();
-            const timeLabel = now.toLocaleTimeString();
-            labels.push(timeLabel);
-            if (labels.length > maxDataPoints) {
-                labels.shift();
-            }
+                // Cập nhật biểu đồ nếu có dữ liệu mới
+                if (chartInstance && currentType && sensorData[currentType]) {
+                    chartInstance.data.labels = labels;
+                    chartInstance.data.datasets[0].data = sensorData[currentType];
+                    chartInstance.update();
+                }
+            });
+        });
 
-            // Cập nhật biểu đồ
-            if (chartInstance && currentType && sensorData[currentType]) {
-                chartInstance.data.labels = labels;
-                chartInstance.data.datasets[0].data = sensorData[currentType];
-                chartInstance.update();
-            }
-        }
 
         // Hàm cập nhật nội dung hiển thị
         function updateContentDisplay(type, value) {
             const info = sensorInfo[type];
             const status = checkParameterStatus(type, value);
             let statusColor = '#e74c3c';
-            
+
             if (status === 'normal') statusColor = '#27ae60';
             else if (status === 'warning') statusColor = '#f39c12';
 

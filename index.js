@@ -28,11 +28,12 @@ io.on('connection', (socket) => {
     setInterval(() => {
         const random = Math.floor(Math.random() * 100);
         const data = {
-            'ph': random - 10,
-            'temp': random,
-            'sali': random + 5,
-            'do': random + 5
-        }
+            ph: (Math.random() * 4 + 5.5).toFixed(1), // 5.5 - 9.5
+            temp: (Math.random() * 20 + 15).toFixed(1), // 15 - 35
+            sali: (Math.random() * 30 + 20).toFixed(1), // 20 - 50
+            do: (Math.random() * 15 + 2).toFixed(1) // 2 - 17
+        };
+        console.log('Gửi dữ liệu:', data);
         socket.emit('device-data', data);
     }, 1000);
 });
