@@ -602,14 +602,13 @@
             statusItem.find('.status-message').text(message);
         }
 
-
-        // Simulate socket data for demo
-
         const socket = io();
         socket.on('connect', () => {
             console.log('Connected to server');
             socket.on('device-data', (data) => {
+                console.log('Received data:', data);
                 // Xử lý dữ liệu nhận được từ server
+                // Xử lý dữ liệu giống như socket.on
                 for (let key in data) {
                     if (sensorData[key]) {
                         const value = data[key];
@@ -641,7 +640,15 @@
                     }
                 }
 
-                // Cập nhật biểu đồ nếu có dữ liệu mới
+                // Cập nhật label thời gian
+                const now = new Date();
+                const timeLabel = now.toLocaleTimeString();
+                labels.push(timeLabel);
+                if (labels.length > maxDataPoints) {
+                    labels.shift();
+                }
+
+                // Cập nhật biểu đồ
                 if (chartInstance && currentType && sensorData[currentType]) {
                     chartInstance.data.labels = labels;
                     chartInstance.data.datasets[0].data = sensorData[currentType];
@@ -649,7 +656,6 @@
                 }
             });
         });
-
 
         // Hàm cập nhật nội dung hiển thị
         function updateContentDisplay(type, value) {

@@ -11,11 +11,8 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(bodyParser.urlencoded())
-
-// parse application/json
-app.use(bodyParser.json())
-// Gửi file HTML cho client
+app.use(express.json()); // Thay thế cho body-parser.json()
+app.use(express.urlencoded({ extended: true })); // Thay thế cho body-parser.urlencoded()
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/index.html'));
@@ -24,18 +21,8 @@ app.get('/', (req, res) => {
 // Lắng nghe kết nối từ client
 io.on('connection', (socket) => {
     console.log('Client đã kết nối');
-    // Gửi dữ liệu giả lập mỗi 2 giây
-    setInterval(() => {
-        const random = Math.floor(Math.random() * 100);
-        const data = {
-            ph: (Math.random() * 4 + 5.5).toFixed(1), // 5.5 - 9.5
-            temp: (Math.random() * 20 + 15).toFixed(1), // 15 - 35
-            sali: (Math.random() * 30 + 20).toFixed(1), // 20 - 50
-            do: (Math.random() * 15 + 2).toFixed(1) // 2 - 17
-        };
-        console.log('Gửi dữ liệu:', data);
-        socket.emit('device-data', data);
-    }, 1000);
+    // Gửi dữ liệu giả lập mỗi 1 giây
+  
 });
 
 app.post('/api/data', (req, res) => {
