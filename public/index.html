@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giám Sát Môi Trường Nước</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .parameter-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .parameter-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .parameter-btn.active {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        /* Trạng thái bình thường */
+        .parameter-btn.normal {
+            background: linear-gradient(45deg, #27ae60, #229954);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .parameter-btn.normal:hover {
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+        }
+
+        /* Trạng thái cảnh báo */
+        .parameter-btn.warning {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .parameter-btn.warning:hover {
+            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
+        }
+
+        /* Trạng thái nguy hiểm */
+        .parameter-btn.danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .parameter-btn.danger:hover {
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .datetime-display {
+            text-align: center;
+            font-size: 1.2em;
+            color: #34495e;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(236, 240, 241, 0.8);
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        /* Status Panel - Hiển thị hàng ngang */
+        .status-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .status-header h3 {
+            color: #2c3e50;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .status-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Trạng thái màu cho status-item */
+        .status-item.normal {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.1), rgba(46, 204, 113, 0.05));
+        }
+
+        .status-item.warning {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.05));
+            animation: warning-pulse 2s infinite;
+        }
+
+        .status-item.danger {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.05));
+            animation: danger-pulse 1s infinite;
+        }
+
+        @keyframes warning-pulse {
+            0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
+            50% { box-shadow: 0 5px 20px rgba(243, 156, 18, 0.3); }
+        }
+
+        @keyframes danger-pulse {
+            0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1); }
+            50% { box-shadow: 0 5px 20px rgba(231, 76, 60, 0.4); }
+        }
+
+        .status-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .status-info {
+            color: #2c3e50;
+        }
+
+        .status-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-item.normal .status-value {
+            color: #27ae60;
+        }
+
+        .status-item.warning .status-value {
+            color: #f39c12;
+        }
+
+        .status-item.danger .status-value {
+            color: #e74c3c;
+        }
+
+        .status-message {
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .status-item.normal .status-message {
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+        }
+
+        .status-item.warning .status-message {
+            background: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+        }
+
+        .status-item.danger .status-message {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        .content-display {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .parameter-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .parameter-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #e74c3c;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .parameter-unit {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-left: 10px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            height: 400px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.3em;
+            font-style: italic;
+        }
+
+        /* Status indicator trên nút */
+        .parameter-btn::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+
+        .parameter-btn.warning::after {
+            background: #f39c12;
+            animation: blink 1s infinite;
+        }
+
+        .parameter-btn.danger::after {
+            background: #e74c3c;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        /* Responsive cho tablet */
+        @media (max-width: 1024px) {
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .container {
+                padding: 25px;
+            }
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .title {
+                font-size: 2em;
+            }
+
+            .parameter-btn {
+                padding: 15px 20px;
+                font-size: 1.1em;
+            }
+
+            .parameter-title {
+                font-size: 2em;
+            }
+
+            .parameter-value {
+                font-size: 2.5em;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .status-item {
+                padding: 15px;
+            }
+
+            .status-icon {
+                font-size: 1.5em;
+            }
+
+            .status-value {
+                font-size: 1.5em;
+            }
+
+            .status-name {
+                font-size: 1em;
+            }
+        }
+
+        /* Thêm hiệu ứng cho trạng thái nguy hiểm */
+        .status-item.danger .status-icon {
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="title">Giám Sát Môi Trường Nước</h1>
+
+        <div class="buttons-container">
+            <button class="parameter-btn sensor-card normal" data-type="ph">pH</button>
+            <button class="parameter-btn sensor-card normal" data-type="temp">Nhiệt Độ</button>
+            <button class="parameter-btn sensor-card normal" data-type="sali">Độ mặn</button>
+            <button class="parameter-btn sensor-card normal" data-type="do">DO</button>
+        </div>
+
+        <div class="datetime-display" id="date"></div>
+
+        <!-- Khu vực thông báo trạng thái - Hiển thị hàng ngang -->
+        <div class="status-panel" id="statusPanel">
+            <div class="status-header">
+                <h3>🔔 Trạng Thái Hệ Thống</h3>
+            </div>
+            <div class="status-grid">
+                <div class="status-item normal" data-type="ph">
+                    <div class="status-icon">💧</div>
+                    <div class="status-info">
+                        <div class="status-name">pH</div>
+                        <div class="status-value">7.0</div>
+                        <div class="status-message">Bình thường</div>
+                    </div>
+                </div>
+                <div class="status-item normal" data-type="temp">
+                    <div class="status-icon">🌡️</div>
+                    <div class="status-info">
+                        <div class="status-name">Nhiệt độ</div>
+                        <div class="status-value">25°C</div>
+                        <div class="status-message">Bình thường</div>
+                    </div>
+                </div>
+                <div class="status-item normal" data-type="sali">
+                    <div class="status-icon">🧂</div>
+                    <div class="status-info">
+                        <div class="status-name">Độ mặn</div>
+                        <div class="status-value">35%</div>
+                        <div class="status-message">Bình thường</div>
+                    </div>
+                </div>
+                <div class="status-item normal" data-type="do">
+                    <div class="status-icon">🫧</div>
+                    <div class="status-info">
+                        <div class="status-name">DO</div>
+                        <div class="status-value">8.0mg/L</div>
+                        <div class="status-message">Bình thường</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-display" id="contentDisplay">
+            <div class="welcome-message">
+                🌊 Chọn một thông số để xem chi tiết 🌊
+            </div>
+            <!-- Hidden elements for data display -->
+            <div style="display: none;">
+                <span id="ph">7.0</span>
+                <span id="temp">25</span>
+                <span id="sali">35</span>
+                <span id="do">8.0</span>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const maxDataPoints = 50;
+        let chartInstance = null;
+        let currentType = null;
+        let labels = [];
+
+        // Ngưỡng cảnh báo cho từng thông số
+        const thresholds = {
+            ph: {
+                min: 6.5,
+                max: 8.5,
+                warningMin: 6.0,
+                warningMax: 9.0
+            },
+            temp: {
+                min: 20,
+                max: 30,
+                warningMin: 15,
+                warningMax: 35
+            },
+            sali: {
+                min: 30,
+                max: 40,
+                warningMin: 25,
+                warningMax: 45
+            },
+            do: {
+                min: 6.0,
+                max: 12.0,
+                warningMin: 4.0,
+                warningMax: 15.0
+            }
+        };
+
+        // Dữ liệu sensor thời gian thực
+        const sensorData = {
+            ph: [],
+            temp: [],
+            sali: [],
+            do: []
+        };
+
+        // Thông tin hiển thị cho từng sensor
+        const sensorInfo = {
+            ph: { title: 'pH', unit: '', color: '#3498db' },
+            temp: { title: 'Nhiệt Độ', unit: '°C', color: '#e74c3c' },
+            sali: { title: 'Độ mặn', unit: 'S%', color: '#27ae60' },
+            do: { title: 'DO', unit: 'mg/L', color: '#9b59b6' }
+        };
+
+        // Hàm kiểm tra trạng thái thông số
+        function checkParameterStatus(type, value) {
+            const threshold = thresholds[type];
+            if (!threshold) return 'normal';
+
+            const numValue = parseFloat(value);
+            
+            if (numValue < threshold.warningMin || numValue > threshold.warningMax) {
+                return 'danger';
+            } else if (numValue < threshold.min || numValue > threshold.max) {
+                return 'warning';
+            } else {
+                return 'normal';
+            }
+        }
+
+        // Hàm cập nhật màu nút
+        function updateButtonStatus(type, status) {
+            const button = $(`.sensor-card[data-type="${type}"]`);
+            button.removeClass('normal warning danger');
+            button.addClass(status);
+        }
+
+        // Hàm cập nhật bảng trạng thái
+        function updateStatusPanel(type, value, status) {
+            const statusItem = $(`.status-item[data-type="${type}"]`);
+            const info = sensorInfo[type];
+            
+            // Cập nhật class trạng thái
+            statusItem.removeClass('normal warning danger').addClass(status);
+            
+            // Cập nhật giá trị
+            statusItem.find('.status-value').text(value + info.unit);
+            
+            // Cập nhật thông điệp
+            let message = '';
+            if (status === 'normal') {
+                message = 'Bình thường';
+            } else if (status === 'warning') {
+                message = 'Cần chú ý';
+            } else if (status === 'danger') {
+                message = 'Nguy hiểm!';
+            }
+            statusItem.find('.status-message').text(message);
+        }
+
+        // Simulate socket data for demo
+        function simulateData() {
+            const data = {
+                ph: (Math.random() * 4 + 5.5).toFixed(1), // 5.5 - 9.5
+                temp: (Math.random() * 20 + 15).toFixed(1), // 15 - 35
+                sali: (Math.random() * 30 + 20).toFixed(1), // 20 - 50
+                do: (Math.random() * 15 + 2).toFixed(1) // 2 - 17
+            };
+
+            // Xử lý dữ liệu giống như socket.on
+            for (let key in data) {
+                if (sensorData[key]) {
+                    const value = data[key];
+                    const oldValue = $('#' + key).text();
+                    
+                    // Cập nhật giá trị hiển thị
+                    $('#' + key).text(value);
+
+                    // Kiểm tra trạng thái
+                    const status = checkParameterStatus(key, value);
+                    const oldStatus = checkParameterStatus(key, oldValue);
+                    
+                    // Cập nhật màu nút
+                    updateButtonStatus(key, status);
+                    
+                    // Cập nhật bảng trạng thái
+                    updateStatusPanel(key, value, status);
+
+                    // Thêm dữ liệu vào mảng
+                    sensorData[key].push(parseFloat(value));
+                    if (sensorData[key].length > maxDataPoints) {
+                        sensorData[key].shift();
+                    }
+
+                    // Cập nhật giá trị trong content display nếu đang xem sensor này
+                    if (currentType === key) {
+                        updateContentDisplay(key, value);
+                    }
+                }
+            }
+
+            // Cập nhật label thời gian
+            const now = new Date();
+            const timeLabel = now.toLocaleTimeString();
+            labels.push(timeLabel);
+            if (labels.length > maxDataPoints) {
+                labels.shift();
+            }
+
+            // Cập nhật biểu đồ
+            if (chartInstance && currentType && sensorData[currentType]) {
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = sensorData[currentType];
+                chartInstance.update();
+            }
+        }
+
+        // Hàm cập nhật nội dung hiển thị
+        function updateContentDisplay(type, value) {
+            const info = sensorInfo[type];
+            const status = checkParameterStatus(type, value);
+            let statusColor = '#e74c3c';
+            
+            if (status === 'normal') statusColor = '#27ae60';
+            else if (status === 'warning') statusColor = '#f39c12';
+
+            const contentDisplay = document.getElementById('contentDisplay');
+            contentDisplay.innerHTML = `
+                <div class="parameter-title">${info.title}</div>
+                <div class="parameter-value" style="color: ${statusColor}">
+                    ${value}
+                    <span class="parameter-unit">${info.unit}</span>
+                </div>
+            `;
+        }
+
+        // Hàm render biểu đồ
+        function renderChart(type) {
+            if (chartInstance !== null) {
+                chartInstance.destroy();
+            }
+
+            const info = sensorInfo[type];
+            const ctx = document.getElementById('chart').getContext('2d');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: info.title,
+                        data: sensorData[type] || [],
+                        borderColor: info.color,
+                        backgroundColor: info.color + '20',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: info.color,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Xử lý click nút sensor
+        $(document).on('click', '.sensor-card', function () {
+            // Xóa class active khỏi tất cả các nút
+            $('.sensor-card').removeClass('active');
+
+            // Thêm class active cho nút được nhấn
+            $(this).addClass('active');
+
+            const type = $(this).data('type');
+            currentType = type;
+
+            // Cập nhật nội dung hiển thị
+            const currentValue = $('#' + type).text() || '0';
+            updateContentDisplay(type, currentValue);
+
+            // Render biểu đồ
+            renderChart(type);
+        });
+
+        // Cập nhật thời gian
+        setInterval(() => {
+            const now = new Date();
+            const timeString = now.toLocaleString('vi-VN');
+            $('#date').text(timeString);
+        }, 1000);
+
+        // Simulate data every 3 seconds
+        setInterval(simulateData, 3000);
+
+        // Khởi tạo
+        window.onload = function () {
+            const ctx = document.getElementById('chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Cập nhật thời gian ngay lập tức
+            const now = new Date();
+            const timeString = now.toLocaleString('vi-VN');
+            $('#date').text(timeString);
+
+            // Khởi tạo trạng thái ban đầu
+            setTimeout(() => {
+                simulateData();
+            }, 1000);
+        };
+    </script>
+</body>
+
+</html>
