@@ -30,8 +30,7 @@ io.on('connection', (socket) => {
             "ph": (Math.random() * 14).toFixed(2) // Giả lập độ pH
         };
         io.emit('device-data', data);    // Gửi dữ liệu giả lập mỗi 1 giây
-    }, 1000); // 1000ms = 1 giây
-    io.emit('device-data', data);    // Gửi dữ liệu giả lập mỗi 1 giây
+    }, 1000); // 1000ms = 1 giây // Gửi dữ liệu giả lập mỗi 1 giây
   
 });
 
