@@ -28,7 +28,14 @@ io.on('connection', (socket) => {
 app.post('/api/data', (req, res) => {
     const data = req.body;
     console.log('Dữ liệu từ thiết bị:', data);
-
+    if(!data.sali)
+        data.sali = '...';
+    if(!data.temp)
+        data.temp = '...';
+    if(!data.do)
+        data.do = '...';
+    if(!data.ph)
+        data.ph = '...';
     // Gửi realtime tới Web
     io.emit('device-data', data);
 
